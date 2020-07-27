@@ -1,2 +1,1 @@
-/elasticsearch/data/nodes/_state
-/elasticsearch/data/nodes/indices
+/elasticsearch/data/**

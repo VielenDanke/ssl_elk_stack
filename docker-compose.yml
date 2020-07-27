@@ -20,7 +20,6 @@ services:
     hostname: elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:$ELASTIC_VERSION
     environment:
-      - path.data=$ES_MOUNT_DRIVE
       - http.port=9200
       - http.host=0.0.0.0
       - http.cors.enabled=true
@@ -75,8 +74,8 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash:$ELASTIC_VERSION
     volumes:
-      - /home/vielen/Documents/elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-      - /home/vielen/Documents/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - $LOGSTASH_CONFIG_DRIVE/config/:/usr/share/logstash/config:ro
+      - $LOGSTASH_CONFIG_DRIVE/pipeline/:/usr/share/logstash/pipeline:ro
     ports:
       - 5000:5000
     networks: ['elk_stack']
