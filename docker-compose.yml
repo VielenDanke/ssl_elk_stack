@@ -1,4 +1,4 @@
-version: '3'
+version: '3.2'
 
 services:
   create_certs:
@@ -13,22 +13,18 @@ services:
         '
     user: "0"
     working_dir: /usr/share/elasticsearch
-    volumes: ['certs:/usr/share/elasticsearch/config/certificates']
+    volumes:
+      - type: volume
+        source: certs
+        target: /usr/share/elasticsearch/config/certificates
         
   elasticsearch:
     container_name: elasticsearch
     hostname: elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:$ELASTIC_VERSION
     environment:
-      - http.port=9200
       - http.host=0.0.0.0
-      - http.cors.enabled=true
-      - http.cors.allow-credentials=true
-      - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization,WWW-Authenticate
       - discovery.type=single-node
-      - http.cors.allow-origin=/https?:\/\/localhost(:[0-9]+)?/
-      - transport.host=127.0.0.1
-      - bootstrap.memory_lock=true
       - ELASTIC_PASSWORD=$ES_PASSWORD  
       - xpack.security.enabled=true
       - xpack.security.transport.ssl.enabled=true
@@ -41,17 +37,23 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - $ES_MOUNT_DRIVE:/usr/share/elasticsearch/data
-      - certs:/usr/share/elasticsearch/config/certificates
+      - type: bind
+        source: $ES_MOUNT_DRIVE
+        target: /usr/share/elasticsearch/data      
+      - type: volume
+        source: certs
+        target: /usr/share/elasticsearch/config/certificates
     ports:
       - 9200:9200
-    networks: ['elk_stack']
+    networks:
+      - elk_stack
     healthcheck:
       test: ["CMD", "curl","-s" ,"-f", "-u", "elastic:${ES_PASSWORD}", "http://localhost:9200/_cat/health"]
       interval: 30s
       timeout: 10s
       retries: 5
-    depends_on: ['create_certs']       
+    depends_on:
+      - create_certs       
 
   kibana:
     container_name: kibana
@@ -68,18 +70,32 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-s", "-f", "http://localhost:5601/login"]
       retries: 6
-    networks: ['elk_stack']
-    depends_on: ['elasticsearch']
+    networks:
+      - elk_stack
+    depends_on:
+      - elasticsearch
       
   logstash:
     image: docker.elastic.co/logstash/logstash:$ELASTIC_VERSION
     volumes:
-      - $LOGSTASH_CONFIG_DRIVE/config/:/usr/share/logstash/config:ro
-      - $LOGSTASH_CONFIG_DRIVE/pipeline/:/usr/share/logstash/pipeline:ro
+      - type: bind
+        source: $LOGSTASH_CONFIG_DRIVE/config/logstash.yml
+        target: /usr/share/logstash/config/logstash.yml
+        read_only: true
+      - type: bind
+        source: $LOGSTASH_CONFIG_DRIVE/pipeline
+        target: /usr/share/logstash/pipeline
+        read_only: true
     ports:
-      - 5000:5000
-    networks: ['elk_stack']
-    depends_on: ['kibana', 'elasticsearch']
+      - 5000:5000/tcp
+      - 5000:5000/udp
+      - 9600:9600  
+    restart: always    
+    networks:
+      - elk_stack
+    depends_on:
+      - kibana
+      - elasticsearch
 
 volumes:
   certs:              
