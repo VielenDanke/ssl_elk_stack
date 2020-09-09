@@ -1,0 +1,7 @@
+elasticsearch.username: elastic
+elasticsearch.password: 12345QwErT$
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+
+server.name: kibana
+server.port: 5601
+server.host: "0"
