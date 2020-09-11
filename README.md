@@ -16,17 +16,23 @@ Correct for your environment
 
 ### Create certificates
 
-````
-In the main directory use command: docker-compose -f create-certs.yml run --rm create_certs
+In the main directory use command: 
 
-Runs once and removes container after
 ````
+docker-compose -f create-certs.yml run --rm create_certs
+````
+
+Runs once and after removes container
 
 ### Up ELK stack
 
+In the main directory use command: 
+
 ````
-In the main directory use command: docker-compose up, use flag -d for detach up (won't showing any logs in the console)
+docker-compose up
 ````
+
+Use flag -d for detach up (won't showing any logs in the console)
 
 ### Create users password
 
@@ -42,6 +48,6 @@ Supply users by new passwords using .env file or docker-compose.yml file directl
 
 Need to restart the stack after apply new passwords
 ````
-docker-compose stop - stop the ELK stack
+docker-compose stop
 docker-compose up
 ````
