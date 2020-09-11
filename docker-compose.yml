@@ -1,23 +1,6 @@
 version: '3.2'
 
 services:
-  create_certs:
-    container_name: create_certs
-    image: docker.elastic.co/elasticsearch/elasticsearch:$ELASTIC_VERSION
-    command: >      
-      bash -c '
-        if [[ ! -f ./config/certificates/elastic-certificates.p12 ]]; then
-          bin/elasticsearch-certutil cert -out config/certificates/elastic-certificates.p12 -pass ""
-        fi;
-        chown -R 1000:0 /usr/share/elasticsearch/config/certificates
-        '
-    user: "0"
-    working_dir: /usr/share/elasticsearch
-    volumes:
-      - type: volume
-        source: certs
-        target: /usr/share/elasticsearch/config/certificates
-        
   elasticsearch:
     container_name: elasticsearch
     hostname: elasticsearch
@@ -27,10 +10,15 @@ services:
       - discovery.type=single-node
       - ELASTIC_PASSWORD=$ES_PASSWORD  
       - xpack.security.enabled=true
-      - xpack.security.transport.ssl.enabled=true
-      - xpack.security.transport.ssl.verification_mode=certificate
-      - xpack.security.transport.ssl.keystore.path=/usr/share/elasticsearch/config/certificates/elastic-certificates.p12
-      - xpack.security.transport.ssl.truststore.path=/usr/share/elasticsearch/config/certificates/elastic-certificates.p12
+      - xpack.security.http.ssl.enabled=true 
+      - xpack.security.http.ssl.key=$CERTS_DIR/elasticsearch/elasticsearch.key
+      - xpack.security.http.ssl.certificate_authorities=$CERTS_DIR/ca/ca.crt
+      - xpack.security.http.ssl.certificate=$CERTS_DIR/elasticsearch/elasticsearch.crt
+      - xpack.security.transport.ssl.enabled=true 
+      - xpack.security.transport.ssl.verification_mode=certificate 
+      - xpack.security.transport.ssl.certificate_authorities=$CERTS_DIR/ca/ca.crt
+      - xpack.security.transport.ssl.certificate=$CERTS_DIR/elasticsearch/elasticsearch.crt
+      - xpack.security.transport.ssl.key=$CERTS_DIR/elasticsearch/elasticsearch.key
       - "ES_JAVA_OPTS=-Xms${ES_JVM_HEAP} -Xmx${ES_JVM_HEAP}"
     ulimits:
       memlock:
@@ -42,34 +30,37 @@ services:
         target: /usr/share/elasticsearch/data      
       - type: volume
         source: certs
-        target: /usr/share/elasticsearch/config/certificates
+        target: $CERTS_DIR
     ports:
       - 9200:9200
     networks:
       - elk_stack
     healthcheck:
-      test: ["CMD", "curl","-s" ,"-f", "-u", "elastic:${ES_PASSWORD}", "http://localhost:9200/_cat/health"]
+      test: curl --cacert $CERTS_DIR/ca/ca.crt -s https://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
       interval: 30s
       timeout: 10s
-      retries: 5
-    depends_on:
-      - create_certs       
+      retries: 5       
 
   kibana:
     container_name: kibana
     hostname: kibana
     image: docker.elastic.co/kibana/kibana:$ELASTIC_VERSION
     volumes:
+      - type: volume
+        source: certs
+        target: $CERTS_DIR
       - type: bind
         source: $KIBANA_CONFIG_PATH/kibana.yml
-        target: /usr/share/kibana/config/kibana.yml  
+        target: /usr/share/kibana/config/kibana.yml    
     ports:
       - 5601:5601
-    healthcheck:
-      test: ["CMD", "curl", "-s", "-f", "http://localhost:5601/login"]
-      retries: 6
     networks:
       - elk_stack
+    healthcheck:
+      test: curl -u elastic:$ES_PASSWORD --cacert $CERTS_DIR/ca/ca.crt -s https://localhost:5601/api/status || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
     depends_on:
       - elasticsearch
       
@@ -84,19 +75,51 @@ services:
         source: $LOGSTASH_CONFIG_DRIVE/pipeline
         target: /usr/share/logstash/pipeline
         read_only: true
+      - type: volume
+        source: certs
+        target: $CERTS_DIR
     ports:
-      - 5000:5000/tcp
-      - 5000:5000/udp
       - 9600:9600  
     restart: always    
     networks:
       - elk_stack
+    healthcheck:
+      test: curl --cacert $CERTS_DIR/ca/ca.crt -s https://localhost:9600 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5      
     depends_on:
       - kibana
       - elasticsearch
 
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:$ELASTIC_VERSION      
+    volumes:
+      - type: bind
+        source: $FILEBEAT_CONFIG_PATH/filebeat.yml
+        target: /usr/share/filebeat/filebeat.yml
+      - type: volume
+        source: certs
+        target: $CERTS_DIR
+      - type: bind
+        source: $FILEBEAT_CONFIG_PATH/dockerlogs
+        target: /usr/share/dockerlogs/data
+      - type: bind
+        source: /var/lib/docker/containers
+        target: /var/lib/docker/containers
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    networks:
+      - elk_stack
+    depends_on:
+      - kibana
+      - logstash
+      - elasticsearch       
+
 volumes:
-  certs:              
+  certs:
+   driver: local       
 
 networks:
   elk_stack:

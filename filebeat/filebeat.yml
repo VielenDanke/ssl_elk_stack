@@ -18,8 +18,12 @@ filebeat.config.modules:
   reload.enabled: false
  
 output.logstash:
-  hosts: ["127.0.0.1:5044"]
- 
+  hosts: ["localhost:5044"]
+  ssl.certificate_authorities:
+   - /usr/share/elasticsearch/config/certificates/ca/ca.crt       
+  ssl.certificate: "/usr/share/elasticsearch/config/certificates/logstash/logstash.crt"
+  ssl.key: "/usr/share/elasticsearch/config/certificates/logstash/logstash.key"
+
 log files:
 logging.level: error
 logging.to_files: false
@@ -27,7 +31,6 @@ logging.to_syslog: false
 loggins.metrice.enabled: false
 logging.files:
   path: /var/log/filebeat
-  name: filebeat
+  name: beats
   keepfiles: 7
   permissions: 0644
-ssl.verification_mode: none
