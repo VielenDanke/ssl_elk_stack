@@ -41,9 +41,9 @@ For having different users for each of part of ELK stack, use next command
 ````
 docker exec elasticsearch /bin/bash -c "bin/elasticsearch-setup-passwords \
 auto --batch --url https://elasticsearch:9200"
-
-where elasticsearch - container name and dns name in bridge docker network
 ````
+Where elasticsearch - container name and dns name in bridge docker network
+
 Supply users by new passwords using .env file or docker-compose.yml file directly
 
 Need to restart the stack after apply new passwords
