@@ -21,6 +21,7 @@ In the main directory use command:
 ````
 docker-compose -f create-certs.yml run --rm create_certs
 ````
+-f flag uses for targeting concrete yml file in this directory
 
 Runs once and after removes container
 

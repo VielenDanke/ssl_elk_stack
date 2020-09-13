@@ -17,18 +17,14 @@ services:
       '
     working_dir: /usr/share/elasticsearch
     volumes:
-      - type: volume
-        source: certs
+      - type: bind
+        source: $ELK_STACK_DIR/certificates
         target: /certs
       - type: bind
         source: .
-        target: $CERTS_DIR
+        target: $CERTS_DIR  
     networks:
       - elk_stack
-
-volumes:
-  certs:
-    driver: local
 
 networks:
   elk_stack:

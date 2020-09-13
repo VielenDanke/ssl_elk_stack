@@ -28,9 +28,9 @@ services:
       - type: bind
         source: $ES_MOUNT_DRIVE
         target: /usr/share/elasticsearch/data      
-      - type: volume
-        source: certs
-        target: $CERTS_DIR
+      - type: bind
+        source: $ELK_STACK_DIR/certificates
+        target: $CERTS_DIR 
     ports:
       - 9200:9200
     networks:
@@ -46,8 +46,8 @@ services:
     hostname: kibana
     image: docker.elastic.co/kibana/kibana:$ELASTIC_VERSION
     volumes:
-      - type: volume
-        source: certs
+      - type: bind
+        source: $ELK_STACK_DIR/certificates
         target: $CERTS_DIR
       - type: bind
         source: $KIBANA_CONFIG_PATH/kibana.yml
@@ -75,8 +75,8 @@ services:
         source: $LOGSTASH_CONFIG_DRIVE/pipeline
         target: /usr/share/logstash/pipeline
         read_only: true
-      - type: volume
-        source: certs
+      - type: bind
+        source: $ELK_STACK_DIR/certificates
         target: $CERTS_DIR
     ports:
       - 9600:9600  
@@ -98,8 +98,8 @@ services:
       - type: bind
         source: $FILEBEAT_CONFIG_PATH/filebeat.yml
         target: /usr/share/filebeat/filebeat.yml
-      - type: volume
-        source: certs
+      - type: bind
+        source: $ELK_STACK_DIR/certificates
         target: $CERTS_DIR
       - type: bind
         source: $FILEBEAT_CONFIG_PATH/dockerlogs
@@ -115,11 +115,7 @@ services:
     depends_on:
       - kibana
       - logstash
-      - elasticsearch       
-
-volumes:
-  certs:
-   driver: local       
+      - elasticsearch
 
 networks:
   elk_stack:
