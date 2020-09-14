@@ -5,13 +5,15 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:$ELASTIC_VERSION
     container_name: create_certs
     command: >
-      bash -c '
+     bash -c '
         yum install -y -q -e 0 unzip;
         yum install -y -q -e 0 openssl;
+        yum install -y -q -e 0 java-1.8.0-openjdk;
         if [[ ! -f /certs/bundle.zip ]]; then
           bin/elasticsearch-certutil cert --silent --pem --in config/certificates/instances.yml -out /certs/bundle.zip;
           unzip /certs/bundle.zip -d /certs;
           openssl pkcs8 -in /certs/logstash/logstash.key -topk8 -nocrypt -out /certs/logstash/logstash.pkcs8.key;
+          keytool -noprompt -import -alias elk -file /certs/ca/ca.crt -keystore /certs/ca/ca.jks -storepass elk@123;
         fi;
         chown -R 1000:0 /certs
       '

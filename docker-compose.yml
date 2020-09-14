@@ -26,7 +26,7 @@ services:
         hard: -1
     volumes:
       - type: bind
-        source: $ES_MOUNT_DRIVE
+        source: $ELK_STACK_DIR/elasticsearch/data
         target: /usr/share/elasticsearch/data      
       - type: bind
         source: $ELK_STACK_DIR/certificates
@@ -50,7 +50,7 @@ services:
         source: $ELK_STACK_DIR/certificates
         target: $CERTS_DIR
       - type: bind
-        source: $KIBANA_CONFIG_PATH/kibana.yml
+        source: $ELK_STACK_DIR/kibana/kibana.yml
         target: /usr/share/kibana/config/kibana.yml    
     ports:
       - 5601:5601
@@ -68,11 +68,11 @@ services:
     image: docker.elastic.co/logstash/logstash:$ELASTIC_VERSION
     volumes:
       - type: bind
-        source: $LOGSTASH_CONFIG_DRIVE/config/logstash.yml
+        source: $ELK_STACK_DIR/logstash/config/logstash.yml
         target: /usr/share/logstash/config/logstash.yml
         read_only: true
       - type: bind
-        source: $LOGSTASH_CONFIG_DRIVE/pipeline
+        source: $ELK_STACK_DIR/logstash/pipeline
         target: /usr/share/logstash/pipeline
         read_only: true
       - type: bind
@@ -96,13 +96,13 @@ services:
     image: docker.elastic.co/beats/filebeat:$ELASTIC_VERSION      
     volumes:
       - type: bind
-        source: $FILEBEAT_CONFIG_PATH/filebeat.yml
+        source: $ELK_STACK_DIR/filebeat/filebeat.yml
         target: /usr/share/filebeat/filebeat.yml
       - type: bind
         source: $ELK_STACK_DIR/certificates
         target: $CERTS_DIR
       - type: bind
-        source: $FILEBEAT_CONFIG_PATH/dockerlogs
+        source: $ELK_STACK_DIR/filebeat/dockerlogs
         target: /usr/share/dockerlogs/data
       - type: bind
         source: /var/lib/docker/containers
