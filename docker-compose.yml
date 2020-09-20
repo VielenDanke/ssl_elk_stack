@@ -98,6 +98,7 @@ services:
       - type: bind
         source: $ELK_STACK_DIR/filebeat/filebeat.yml
         target: /usr/share/filebeat/filebeat.yml
+        read_only: true
       - type: bind
         source: $ELK_STACK_DIR/certificates
         target: $CERTS_DIR
@@ -112,6 +113,7 @@ services:
         target: /var/run/docker.sock
     networks:
       - elk_stack
+    command: ["--strict.perms=false"]    
     depends_on:
       - kibana
       - logstash
